@@ -4,6 +4,11 @@ import HomePage from "../Pages/HomePage";
 import { AuthLayout } from "../Layout/AuthLayout";
 import { DashboardLayout } from "../Layout/DashboardLayout";
 import NotFound from "../components/NotFound";
+import LoginPage from "../Pages/auth/LoginPage";
+import SignupPage from "../Pages/auth/SignupPage";
+import StudentDashboard from "../Pages/dashboard/StudentDashboard";
+import PaymentPage from "../Pages/PaymentPage";
+import { CookiePolicyPage, PrivacyPolicyPage, RefundPolicyPage, TermsOfUsePage } from "../Pages/legal/LegalPages";
 
 export const router = createBrowserRouter([
     // public routes
@@ -17,6 +22,22 @@ export const router = createBrowserRouter([
             {
                 path: '*',
                 element: <NotFound />
+            },
+            {
+                path: "privacy-policy",
+                element: <PrivacyPolicyPage />
+            },
+            {
+                path: "terms-of-use",
+                element: <TermsOfUsePage />
+            },
+            {
+                path: "cookie-policy",
+                element: <CookiePolicyPage />
+            },
+            {
+                path: "refund-policy",
+                element: <RefundPolicyPage />
             }
         ]
     },
@@ -27,15 +48,31 @@ export const router = createBrowserRouter([
         children: [
             {
                 path: "login",
-                element: <div>Login</div>
+                element: <LoginPage />
             },
             {
                 path: "register",
-                element: <div>Register</div>
+                element: <SignupPage />
             },
             {
                 path: "profile",
                 element: <div>Profile</div>
+            }
+        ]
+    },
+
+    // student workspace routes
+    {
+        path: "/student",
+        element: <DashboardLayout />,
+        children: [
+            {
+                path: "dashboard",
+                element: <StudentDashboard />
+            },
+            {
+                path: "payment",
+                element: <PaymentPage />
             }
         ]
     },
