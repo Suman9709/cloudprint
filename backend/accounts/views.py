@@ -59,6 +59,7 @@ class LoginView(APIView):
     authentication_classes = []
 
     def post(self, request):
+        enforce_csrf(request)
         serializer = LoginSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]

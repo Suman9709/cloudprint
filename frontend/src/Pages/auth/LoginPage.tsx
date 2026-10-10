@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { api, apiError } from "../../lib/api";
+import { api, apiError, ensureCsrf } from "../../lib/api";
 
 type LoginResponse = {
   user: { role: string; is_platform_admin: boolean };
@@ -18,7 +18,7 @@ const LoginPage = () => {
     setSubmitting(true);
     setError("");
     try {
-      const { data } = await api.post<LoginResponse>("/api/accounts/login/", { email, password });
+      const { data } = await api.post<LoginResponse>("/api/accounts/login/", { email, password }, { headers: await ensureCsrf() });
       navigate(data.user.is_platform_admin ? "/admin/overview" : "/dashboard");
     } catch (requestError) {
       setError(apiError(requestError, "We could not sign you in. Check your email and password."));

@@ -16,7 +16,7 @@ const AdminLoginPage = () => {
     setError("");
     setSubmitting(true);
     try {
-      const { data } = await api.post<LoginResponse>("/api/accounts/login/", { email, password });
+      const { data } = await api.post<LoginResponse>("/api/accounts/login/", { email, password }, { headers: await ensureCsrf() });
       if (!data.user.is_platform_admin) {
         await api.post("/api/accounts/logout/", {}, { headers: await ensureCsrf() });
         setError("This account is a shop account. Use the shop owner sign-in instead.");

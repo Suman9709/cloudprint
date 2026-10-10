@@ -12,7 +12,12 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 
 from datetime import timedelta
 from decimal import Decimal
+import os
 from pathlib import Path
+
+from django.core.exceptions import ImproperlyConfigured
+from django.core.management.utils import get_random_secret_key
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,17 +26,27 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-^=hss+=bbzvavws6wina5y$!(nvz88-2@-8gsd=e6ur!!%ya10'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
-import os
-from dotenv import load_dotenv
-BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env')
+
+
+def env_flag(name, default=False):
+    return os.environ.get(name, str(default)).strip().lower() in {"1", "true", "yes", "on"}
+
+
+# Local development works without a committed secret. Production must provide
+# one through its secret manager/environment; never commit it to this file.
+DEBUG = env_flag("DEBUG", True)
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured("DJANGO_SECRET_KEY must be set when DEBUG=False.")
+    SECRET_KEY = get_random_secret_key()
+
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+    if host.strip()
+]
 
 # The public React application. Keep this in the environment so production
 # deployments can use their real Vercel/custom domain without code changes.
@@ -76,7 +91,8 @@ JWT_ACCESS_COOKIE = "access_token"
 JWT_REFRESH_COOKIE = "refresh_token"
 JWT_ACCESS_COOKIE_MAX_AGE = int(SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"].total_seconds())
 JWT_REFRESH_COOKIE_MAX_AGE = int(SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds())
-JWT_COOKIE_SECURE = not DEBUG
+COOKIE_SECURE = env_flag("COOKIE_SECURE", not DEBUG)
+JWT_COOKIE_SECURE = COOKIE_SECURE
 JWT_COOKIE_SAMESITE = "Lax"
 
 MIDDLEWARE = [
@@ -100,8 +116,28 @@ CSRF_TRUSTED_ORIGINS = list(dict.fromkeys([
     "http://127.0.0.1:5173",
     FRONTEND_URL.rstrip('/'),
 ]))
-CSRF_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = COOKIE_SECURE
 CSRF_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_SECURE = COOKIE_SECURE
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+
+# These defaults activate only outside local DEBUG mode. Set
+# SECURE_SSL_REDIRECT=False temporarily only when the production host is not
+# yet serving HTTPS.
+SECURE_SSL_REDIRECT = env_flag("SECURE_SSL_REDIRECT", not DEBUG)
+SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", "31536000" if not DEBUG else "0"))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env_flag("SECURE_HSTS_INCLUDE_SUBDOMAINS", not DEBUG)
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+X_FRAME_OPTIONS = "DENY"
+
+# Keep upload buffering bounded. Your reverse proxy/cloud host must also cap
+# request body size because file uploads can be spooled before Django validates
+# serializer-level limits.
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
+DATA_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024
+DATA_UPLOAD_MAX_NUMBER_FILES = 10
 
 ROOT_URLCONF = 'config.urls'
 
