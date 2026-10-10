@@ -14,6 +14,7 @@ import shutil
 import subprocess
 import tempfile
 import zipfile
+from io import BytesIO
 from dataclasses import dataclass
 from pathlib import Path
 from xml.etree import ElementTree
@@ -59,14 +60,21 @@ def _libreoffice_binary():
     return shutil.which("soffice") or shutil.which("libreoffice")
 
 
-def _converted_pdf_page_count(uploaded_file, filename):
-    """Return rendered page count, or None when LibreOffice is not installed."""
+def render_file_to_pdf_bytes(uploaded_file, filename):
+    """Render an Office/text file to PDF for a browser print preview.
+
+    The source is never persisted as a converted second document. The PDF only
+    exists in a temporary directory and is streamed to the authorised shop.
+    """
     binary = _libreoffice_binary()
     if not binary:
-        return None
+        raise ValidationError(
+            "Direct printing for this file type requires LibreOffice on the server. "
+            "Upload a PDF or configure LIBREOFFICE_BIN."
+        )
     suffix = Path(filename).suffix.lower()
     safe_stem = Path(filename).stem.replace(" ", "_") or "document"
-    with tempfile.TemporaryDirectory(prefix="cloudprint-page-count-") as workdir:
+    with tempfile.TemporaryDirectory(prefix="cloudprint-print-") as workdir:
         source = Path(workdir) / f"{safe_stem}{suffix}"
         _rewind(uploaded_file)
         with source.open("wb") as destination:
@@ -81,14 +89,21 @@ def _converted_pdf_page_count(uploaded_file, filename):
                 timeout=90,
             )
         except (OSError, subprocess.TimeoutExpired) as error:
-            raise ValidationError("The document converter could not process this file. Upload a PDF or ask the shop to review it.") from error
+            raise ValidationError("The document could not be rendered for printing. Upload a PDF or ask the shop to review it.") from error
         if completed.returncode != 0:
-            raise ValidationError("The document converter could not read this file. Upload a valid PDF or document.")
+            raise ValidationError("The document converter could not read this file for printing.")
         converted_files = list(Path(workdir).glob("*.pdf"))
         if not converted_files:
             raise ValidationError("The document converter did not create a printable PDF.")
-        with converted_files[0].open("rb") as converted_pdf:
-            return _pdf_page_count(converted_pdf)
+        return converted_files[0].read_bytes()
+
+
+def _converted_pdf_page_count(uploaded_file, filename):
+    """Return rendered page count, or None when LibreOffice is not installed."""
+    binary = _libreoffice_binary()
+    if not binary:
+        return None
+    return _pdf_page_count(BytesIO(render_file_to_pdf_bytes(uploaded_file, filename)))
 
 
 def _docx_page_hint(uploaded_file):

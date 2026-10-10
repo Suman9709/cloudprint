@@ -1,4 +1,7 @@
 from datetime import timedelta
+from io import BytesIO
+import mimetypes
+from pathlib import Path
 
 from django.db import transaction
 from django.db.models import Count, Q, Sum
@@ -6,7 +9,7 @@ from django.db.models.functions import TruncDate
 from django.http import FileResponse, Http404
 from django.utils import timezone
 from rest_framework import generics, status
-from rest_framework.exceptions import NotFound, PermissionDenied
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
@@ -15,6 +18,7 @@ from rest_framework.views import APIView
 from shops.models import Shop
 
 from .models import Order, OrderDocument
+from .page_counting import render_file_to_pdf_bytes
 from .serializers import (
     CreateGuestOrderSerializer,
     GuestOrderResponseSerializer,
@@ -155,6 +159,41 @@ class OrderDocumentView(APIView):
         return FileResponse(order.document.open("rb"), as_attachment=True, filename=order.original_filename)
 
 
+def inline_print_response(file_field, filename):
+    """Return a private document inline so the browser can show its print UI."""
+    extension = Path(filename).suffix.lower()
+    if extension == ".pdf" or extension in {".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".tif", ".tiff"}:
+        content_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+        return FileResponse(file_field.open("rb"), as_attachment=False, filename=filename, content_type=content_type)
+    try:
+        pdf_bytes = render_file_to_pdf_bytes(file_field, filename)
+    except ValidationError as error:
+        return Response({"detail": error.detail}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+    return FileResponse(
+        BytesIO(pdf_bytes),
+        as_attachment=False,
+        filename=f"{Path(filename).stem}.pdf",
+        content_type="application/pdf",
+    )
+
+
+class OrderDocumentPrintView(APIView):
+    """Inline print preview for a legacy one-file order."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            order = Order.objects.select_related("shop").get(pk=pk)
+        except Order.DoesNotExist as error:
+            raise Http404 from error
+        if not shop_queryset_for(request.user).filter(pk=order.shop_id).exists():
+            raise PermissionDenied("You do not have access to this document.")
+        if not order.document:
+            raise Http404
+        return inline_print_response(order.document, order.original_filename)
+
+
 class UploadedOrderDocumentView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -166,6 +205,21 @@ class UploadedOrderDocumentView(APIView):
         if not shop_queryset_for(request.user).filter(pk=document.order.shop_id).exists():
             raise PermissionDenied("You do not have access to this document.")
         return FileResponse(document.document.open("rb"), as_attachment=True, filename=document.original_filename)
+
+
+class UploadedOrderDocumentPrintView(APIView):
+    """Inline print preview for a file in a multi-file order."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            document = OrderDocument.objects.select_related("order__shop").get(pk=pk)
+        except OrderDocument.DoesNotExist as error:
+            raise Http404 from error
+        if not shop_queryset_for(request.user).filter(pk=document.order.shop_id).exists():
+            raise PermissionDenied("You do not have access to this document.")
+        return inline_print_response(document.document, document.original_filename)
 
 
 class ShopAnalyticsView(APIView):

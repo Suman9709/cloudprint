@@ -193,7 +193,8 @@ class ShopOrderSerializer(serializers.ModelSerializer):
         payload = [
             {
                 **OrderDocumentSerializer(document).data,
-                "document_url": request.build_absolute_uri(f"/api/orders/documents/{document.pk}/download/") if request else None,
+                "document_url": f"/api/orders/documents/{document.pk}/download/" if request else None,
+                "print_url": f"/api/orders/documents/{document.pk}/print/" if request else None,
             }
             for document in documents
         ]
@@ -206,6 +207,7 @@ class ShopOrderSerializer(serializers.ModelSerializer):
                 "page_count_status": order.page_count_status,
                 "page_count_method": "legacy_order_file",
                 "document_url": self.get_document_url(order),
+                "print_url": self.get_print_url(order),
             })
         return payload
 
@@ -213,7 +215,13 @@ class ShopOrderSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if not request or not order.document:
             return None
-        return request.build_absolute_uri(f"/api/orders/{order.pk}/document/")
+        return f"/api/orders/{order.pk}/document/"
+
+    def get_print_url(self, order):
+        request = self.context.get("request")
+        if not request or not order.document:
+            return None
+        return f"/api/orders/{order.pk}/print/"
 
 
 class UpdateOrderStatusSerializer(serializers.ModelSerializer):
