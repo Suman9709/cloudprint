@@ -179,7 +179,7 @@ class ShopAnalyticsView(APIView):
         daily_rows = recent_orders.values(day=TruncDate("created_at")).annotate(
             orders=Count("id"),
             paid_orders=Count("id", filter=Q(payment_status=Order.PaymentStatus.MARKED_PAID)),
-            revenue=Sum("total_amount", filter=Q(payment_status=Order.PaymentStatus.MARKED_PAID)),
+            revenue=Sum("print_amount", filter=Q(payment_status=Order.PaymentStatus.MARKED_PAID)),
         )
         daily_lookup = {
             row["day"]: {
@@ -196,7 +196,7 @@ class ShopAnalyticsView(APIView):
 
         today_orders = all_orders.filter(created_at__date=today)
         today_revenue = today_orders.filter(payment_status=Order.PaymentStatus.MARKED_PAID).aggregate(
-            value=Sum("total_amount")
+            value=Sum("print_amount")
         )["value"]
         return Response({
             "today": {

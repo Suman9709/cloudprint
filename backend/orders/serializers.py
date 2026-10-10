@@ -2,6 +2,7 @@ import os
 import secrets
 from decimal import Decimal
 
+from django.conf import settings
 from django.db import transaction
 from rest_framework import serializers
 
@@ -118,7 +119,9 @@ class CreateGuestOrderSerializer(serializers.Serializer):
         price_per_page = shop.colour_price_per_page if print_mode == "colour" else shop.black_white_price_per_page
         finishing_cost = shop.spiral_bind_cost if finishing == "spiral_bind" else Decimal("0.00")
         copies = validated_data.get("copies", 1)
-        total_amount = (price_per_page * page_count * copies + finishing_cost).quantize(Decimal("0.01"))
+        print_amount = (price_per_page * page_count * copies + finishing_cost).quantize(Decimal("0.01"))
+        convenience_fee = settings.CONVENIENCE_FEE.quantize(Decimal("0.01"))
+        total_amount = (print_amount + convenience_fee).quantize(Decimal("0.01"))
         original_filename = (
             counted_documents[0][0].name[:255]
             if len(counted_documents) == 1
@@ -132,6 +135,8 @@ class CreateGuestOrderSerializer(serializers.Serializer):
             page_count_status=page_count_status,
             price_per_page=price_per_page,
             finishing_cost=finishing_cost,
+            print_amount=print_amount,
+            convenience_fee=convenience_fee,
             total_amount=total_amount,
             **validated_data,
         )
@@ -163,7 +168,8 @@ class GuestOrderResponseSerializer(serializers.ModelSerializer):
         model = Order
         fields = [
             "id", "pickup_code", "payment_token", "shop_name", "original_filename", "page_count", "page_count_status",
-            "documents", "copies", "price_per_page", "finishing_cost", "total_amount", "payment_status", "status", "created_at",
+            "documents", "copies", "price_per_page", "finishing_cost", "print_amount", "convenience_fee",
+            "total_amount", "payment_status", "status", "created_at",
         ]
 
 
@@ -176,7 +182,8 @@ class ShopOrderSerializer(serializers.ModelSerializer):
         model = Order
         fields = [
             "id", "pickup_code", "original_filename", "customer_name", "print_mode", "sides", "copies",
-            "page_count", "page_count_status", "finishing", "price_per_page", "finishing_cost", "total_amount", "payment_status",
+            "page_count", "page_count_status", "finishing", "price_per_page", "finishing_cost", "print_amount",
+            "convenience_fee", "total_amount", "payment_status",
             "status", "status_label", "created_at", "updated_at", "documents", "document_url",
         ]
 

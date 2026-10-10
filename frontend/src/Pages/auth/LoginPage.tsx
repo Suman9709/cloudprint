@@ -19,7 +19,7 @@ const LoginPage = () => {
     setError("");
     try {
       const { data } = await api.post<LoginResponse>("/api/accounts/login/", { email, password });
-      navigate(data.user.is_platform_admin ? "/admin/shops" : "/dashboard");
+      navigate(data.user.is_platform_admin ? "/admin/overview" : "/dashboard");
     } catch (requestError) {
       setError(apiError(requestError, "We could not sign you in. Check your email and password."));
     } finally {

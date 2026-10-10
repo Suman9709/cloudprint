@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import (
     AdminShopDeleteView,
+    AdminShopEarningsView,
     AdminShopListCreateView,
     PublicShopDetailView,
     ShopPricingDetailView,
@@ -10,6 +11,7 @@ from .views import (
 
 
 urlpatterns = [
+    path("admin/analytics/", AdminShopEarningsView.as_view(), name="admin-shop-earnings"),
     path("admin/shops/", AdminShopListCreateView.as_view(), name="admin-shop-list-create"),
     path("admin/shops/<int:pk>/", AdminShopDeleteView.as_view(), name="admin-shop-delete"),
     path("dashboard/settings/", ShopPricingListView.as_view(), name="shop-pricing-list"),

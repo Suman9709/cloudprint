@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import { UserLayout } from "../Layout/UserLayout";
 import HomePage from "../Pages/HomePage";
 import { AuthLayout } from "../Layout/AuthLayout";
@@ -9,7 +9,9 @@ import AdminLoginPage from "../Pages/auth/AdminLoginPage";
 import ShopDashboard from "../Pages/dashboard/ShopDashboard";
 import ShopAnalyticsPage from "../Pages/dashboard/ShopAnalyticsPage";
 import ShopSettingsPage from "../Pages/dashboard/ShopSettingsPage";
-import AdminDashboard from "../Pages/dashboard/AdminDashboard";
+import AdminOverviewPage from "../Pages/admin/AdminOverviewPage";
+import AdminShopsPage from "../Pages/admin/AdminShopsPage";
+import CreateShopPage from "../Pages/admin/CreateShopPage";
 import GuestShopPage from "../Pages/public/GuestShopPage";
 import { CookiePolicyPage, PrivacyPolicyPage, RefundPolicyPage, TermsOfUsePage } from "../Pages/legal/LegalPages";
 
@@ -47,6 +49,11 @@ export const router = createBrowserRouter([
   {
     path: "/admin",
     element: <DashboardLayout />,
-    children: [{ path: "shops", element: <AdminDashboard /> }],
+    children: [
+      { index: true, element: <Navigate to="overview" replace /> },
+      { path: "overview", element: <AdminOverviewPage /> },
+      { path: "shops", element: <AdminShopsPage /> },
+      { path: "shops/new", element: <CreateShopPage /> },
+    ],
   },
 ]);

@@ -21,7 +21,7 @@ type CreatedOrder = {
   original_filename: string; page_count: number;
   page_count_status: "exact" | "estimated" | "review_required";
   documents: UploadedDocument[]; copies: number; price_per_page: string;
-  finishing_cost: string; total_amount: string;
+  finishing_cost: string; print_amount: string; convenience_fee: string; total_amount: string;
   payment_status: "pending" | "marked_paid";
 };
 
@@ -117,6 +117,13 @@ const GuestShopPage = () => {
 
   if (order?.payment_status === "marked_paid") {
     return <section className="min-h-[calc(100vh-16rem)] bg-slate-50 px-6 py-16"><div className="mx-auto max-w-lg rounded-3xl border border-emerald-100 bg-white p-9 text-center shadow-xl"><p className="text-sm font-bold tracking-[.16em] text-emerald-600 uppercase">Demo payment marked</p><h1 className="mt-3 text-3xl font-bold">Keep this pickup code</h1><p className="mt-3 text-slate-600">{order.shop_name} has received {order.documents.length} file{order.documents.length === 1 ? "" : "s"} ({order.page_count} pages).</p><div className="mt-8 rounded-2xl bg-slate-950 p-6 text-white"><p className="text-xs font-bold tracking-[.18em] text-blue-200 uppercase">Pickup code</p><p className="mt-2 font-mono text-5xl font-bold tracking-[.3em]">{order.pickup_code}</p></div><p className="mt-5 text-sm text-slate-500">The shop will update the order to Ready for pickup after printing.</p><button type="button" onClick={() => { setOrder(null); setFiles([]); setPaymentChecked(false); }} className="mt-7 w-full rounded-xl bg-blue-600 px-4 py-3.5 font-semibold text-white">Send another order</button></div></section>;
+  }
+
+  // New orders include an immutable split. Keep the older confirmation branch
+  // below only for an order created before the pricing-split migration.
+  if (order && order.convenience_fee !== undefined) {
+    const needsReview = order.page_count_status !== "exact";
+    return <section className="min-h-[calc(100vh-16rem)] bg-slate-50 px-6 py-16"><div className="mx-auto max-w-lg rounded-3xl border border-blue-100 bg-white p-8 shadow-xl"><p className="text-sm font-bold tracking-[.16em] text-blue-600 uppercase">Demo payment</p><h1 className="mt-2 text-3xl font-bold">Confirm your print order</h1><p className="mt-2 text-slate-600">No real payment gateway is connected yet.</p><div className="mt-6 rounded-2xl bg-slate-950 p-5 text-white"><div className="space-y-2 text-sm text-slate-200">{order.documents.map((document) => <div key={document.id} className="flex items-start justify-between gap-3"><span className="min-w-0 truncate">{document.original_filename}</span><span className="shrink-0">{document.page_count} p.</span></div>)}</div><div className="mt-4 flex justify-between border-t border-white/10 pt-4 text-sm text-slate-300"><span>{order.page_count} pages × {order.copies} copies</span><span>{money(order.price_per_page)} / page</span></div>{Number(order.finishing_cost) > 0 && <div className="mt-2 flex justify-between text-sm text-slate-300"><span>Spiral binding</span><span>{money(order.finishing_cost)}</span></div>}<div className="mt-4 flex justify-between border-t border-white/10 pt-4 text-sm text-slate-300"><span>Print and finishing</span><span>{money(order.print_amount)}</span></div><div className="mt-2 flex justify-between text-sm text-slate-300"><span>CloudPrint convenience fee</span><span>{money(order.convenience_fee)}</span></div><div className="mt-4 border-t border-white/10 pt-4 text-xl font-bold">Total <span className="float-right">{money(order.total_amount)}</span></div></div>{needsReview && <p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">One or more files used an estimated page count. The shop will confirm the final count before printing.</p>}<label className="mt-6 flex cursor-pointer gap-3 rounded-xl border border-slate-200 p-4 text-sm leading-6"><input checked={paymentChecked} onChange={(event) => setPaymentChecked(event.target.checked)} type="checkbox" className="mt-1 size-4" /><span>I confirm payment to the shop. This is a <strong>demo-only</strong> confirmation.</span></label>{error && <p className="mt-4 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}<button disabled={!paymentChecked || markingPaid} type="button" onClick={() => void confirmDemoPayment()} className="mt-6 w-full rounded-xl bg-blue-600 px-4 py-3.5 font-semibold text-white disabled:bg-slate-300">{markingPaid ? "Confirming…" : "Mark paid and get pickup code"}</button></div></section>;
   }
 
   if (order) {

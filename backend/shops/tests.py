@@ -2,6 +2,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from accounts.models import User
+from orders.models import Order
 
 from .models import Shop
 
@@ -84,3 +85,47 @@ class ShopAdministrationTests(APITestCase):
         self.assertTrue(User.objects.filter(pk=owner.pk).exists())
         self.client.force_authenticate(user=None)
         self.assertEqual(self.client.get("/api/shops/retired-copy/").status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_platform_admin_sees_each_shop_and_platform_earnings_separately(self):
+        admin = User.objects.create_user(
+            username="report-admin",
+            email="report-admin@example.com",
+            name="Report Admin",
+            password="safe-password-123",
+            role=User.Role.PLATFORM_ADMIN,
+        )
+        owner = User.objects.create_user(
+            username="earning-owner",
+            email="earning-owner@example.com",
+            name="Earning Owner",
+            password="safe-password-123",
+            role=User.Role.SHOP,
+        )
+        shop = Shop.objects.create(owner=owner, name="Earning Copy", slug="earning-copy")
+        Order.objects.create(
+            shop=shop,
+            pickup_code="8484",
+            original_filename="paid.pdf",
+            payment_status=Order.PaymentStatus.MARKED_PAID,
+            print_amount="50.00",
+            convenience_fee="3.00",
+            total_amount="53.00",
+        )
+        Order.objects.create(
+            shop=shop,
+            pickup_code="8585",
+            original_filename="unpaid.pdf",
+            print_amount="20.00",
+            convenience_fee="3.00",
+            total_amount="23.00",
+        )
+        self.client.force_authenticate(admin)
+
+        response = self.client.get("/api/shops/admin/analytics/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["summary"]["paid_orders"], 1)
+        self.assertEqual(response.data["summary"]["shop_earnings"], "50.00")
+        self.assertEqual(response.data["summary"]["platform_earnings"], "3.00")
+        self.assertEqual(response.data["summary"]["customer_payments"], "53.00")
+        self.assertEqual(response.data["shops"][0]["total_orders"], 2)

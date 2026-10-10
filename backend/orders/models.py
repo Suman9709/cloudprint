@@ -49,6 +49,11 @@ class Order(models.Model):
     finishing = models.CharField(max_length=30, default="none")
     price_per_page = models.DecimalField(max_digits=8, decimal_places=2, default="2.00")
     finishing_cost = models.DecimalField(max_digits=8, decimal_places=2, default="0.00")
+    # These are snapshots made when the customer submits an order. They must
+    # never be recalculated from a shop's later price changes: reporting and
+    # payment settlement need an immutable record of the agreed split.
+    print_amount = models.DecimalField(max_digits=10, decimal_places=2, default="2.00")
+    convenience_fee = models.DecimalField(max_digits=10, decimal_places=2, default="0.00")
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default="2.00")
     payment_status = models.CharField(
         max_length=20,

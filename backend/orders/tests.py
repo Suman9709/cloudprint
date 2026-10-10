@@ -79,7 +79,9 @@ class GuestOrderFlowTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data["page_count"], 5)
-        self.assertEqual(response.data["total_amount"], "35.00")
+        self.assertEqual(response.data["print_amount"], "35.00")
+        self.assertEqual(response.data["convenience_fee"], "3.00")
+        self.assertEqual(response.data["total_amount"], "38.00")
         self.assertEqual([item["page_count"] for item in response.data["documents"]], [2, 3])
         order = Order.objects.get()
         self.assertEqual(order.documents.count(), 2)
@@ -95,7 +97,9 @@ class GuestOrderFlowTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data["page_count"], 10)
         self.assertEqual(response.data["price_per_page"], "2.00")
-        self.assertEqual(response.data["total_amount"], "20.00")
+        self.assertEqual(response.data["print_amount"], "20.00")
+        self.assertEqual(response.data["convenience_fee"], "3.00")
+        self.assertEqual(response.data["total_amount"], "23.00")
         self.assertEqual(response.data["documents"][0]["page_count"], 10)
 
     def test_guest_payment_confirmation_marks_the_order_paid_and_keeps_the_quoted_price(self):
@@ -108,7 +112,8 @@ class GuestOrderFlowTests(APITestCase):
         )
 
         self.assertEqual(create_response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(create_response.data["total_amount"], "21.00")
+        self.assertEqual(create_response.data["print_amount"], "21.00")
+        self.assertEqual(create_response.data["total_amount"], "24.00")
         payment_response = self.client.post(
             f"/api/orders/{create_response.data['id']}/payment/",
             {"payment_token": create_response.data["payment_token"]},
@@ -131,7 +136,8 @@ class GuestOrderFlowTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data["price_per_page"], "6.00")
         self.assertEqual(response.data["finishing_cost"], "15.00")
-        self.assertEqual(response.data["total_amount"], "27.00")
+        self.assertEqual(response.data["print_amount"], "27.00")
+        self.assertEqual(response.data["total_amount"], "30.00")
 
     def test_shop_owner_only_sees_their_shop_orders(self):
         other_owner = User.objects.create_user(

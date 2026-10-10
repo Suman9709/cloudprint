@@ -22,7 +22,7 @@ const AdminLoginPage = () => {
         setError("This account is a shop account. Use the shop owner sign-in instead.");
         return;
       }
-      navigate("/admin/shops");
+      navigate("/admin/overview");
     } catch (requestError) {
       setError(apiError(requestError, "We could not sign you in as a platform administrator."));
     } finally {

@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 from datetime import timedelta
+from decimal import Decimal
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -31,6 +32,10 @@ import os
 from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env')
+
+# Added to every new order and retained by the platform. It is read only on
+# the public page; the server freezes the actual value on each order.
+CONVENIENCE_FEE = Decimal(os.environ.get('CONVENIENCE_FEE', '3.00'))
 
 # Application definition
 
