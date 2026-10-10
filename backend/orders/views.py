@@ -22,7 +22,6 @@ from .page_counting import render_file_to_pdf_bytes
 from .serializers import (
     CreateGuestOrderSerializer,
     GuestOrderResponseSerializer,
-    MarkOrderPaidSerializer,
     ShopOrderSerializer,
     UpdateOrderStatusSerializer,
 )
@@ -55,29 +54,6 @@ class GuestOrderCreateView(APIView):
         return Response(GuestOrderResponseSerializer(order).data, status=status.HTTP_201_CREATED)
 
 
-class GuestOrderPaymentView(APIView):
-    """Demo payment confirmation. Replace with a verified gateway webhook in production."""
-
-    permission_classes = [AllowAny]
-    authentication_classes = []
-
-    def post(self, request, pk):
-        serializer = MarkOrderPaidSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        try:
-            order = Order.objects.select_related("shop").get(pk=pk)
-        except Order.DoesNotExist as error:
-            raise NotFound("Order not found.") from error
-        if serializer.validated_data["payment_token"] != order.payment_token:
-            raise PermissionDenied("This payment link is not valid for the order.")
-
-        if order.payment_status != Order.PaymentStatus.MARKED_PAID:
-            order.payment_status = Order.PaymentStatus.MARKED_PAID
-            order.payment_marked_at = timezone.now()
-            order.save(update_fields=["payment_status", "payment_marked_at", "updated_at"])
-        return Response(GuestOrderResponseSerializer(order).data)
-
-
 class ShopOrderListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ShopOrderSerializer
@@ -89,11 +65,22 @@ class ShopOrderListView(generics.ListAPIView):
             .select_related("shop")
             .prefetch_related("documents")
         )
-        payment_status = self.request.query_params.get("payment_status")
-        if payment_status == Order.PaymentStatus.MARKED_PAID:
-            orders = orders.filter(payment_status=Order.PaymentStatus.MARKED_PAID)
-        elif payment_status == Order.PaymentStatus.PENDING:
+        view = self.request.query_params.get("view")
+        if view == "unpaid":
             orders = orders.filter(payment_status=Order.PaymentStatus.PENDING)
+        elif view == "paid":
+            orders = orders.filter(
+                payment_status=Order.PaymentStatus.MARKED_PAID,
+            ).exclude(status=Order.Status.COLLECTED)
+        elif view == "collected":
+            orders = orders.filter(status=Order.Status.COLLECTED)
+        else:
+            # Backwards-compatible filters for existing API consumers.
+            payment_status = self.request.query_params.get("payment_status")
+            if payment_status == Order.PaymentStatus.MARKED_PAID:
+                orders = orders.filter(payment_status=Order.PaymentStatus.MARKED_PAID)
+            elif payment_status == Order.PaymentStatus.PENDING:
+                orders = orders.filter(payment_status=Order.PaymentStatus.PENDING)
         return orders
 
 
@@ -106,9 +93,37 @@ class ShopOrderStatusView(generics.UpdateAPIView):
         return Order.objects.filter(shop__in=shop_queryset_for(self.request.user))
 
     def patch(self, request, *args, **kwargs):
+        order = self.get_object()
+        if (
+            request.data.get("status") == Order.Status.COLLECTED
+            and order.payment_status != Order.PaymentStatus.MARKED_PAID
+        ):
+            return Response(
+                {"detail": "Record the shop payment before marking this order collected."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         response = super().patch(request, *args, **kwargs)
         order = self.get_object()
         return Response(ShopOrderSerializer(order, context={"request": request}).data, status=response.status_code)
+
+
+class ShopOrderPaymentReceivedView(APIView):
+    """Only the shop can record an in-person UPI/cash payment."""
+
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk):
+        try:
+            order = Order.objects.select_related("shop").get(pk=pk, shop__owner=request.user)
+        except Order.DoesNotExist as error:
+            raise NotFound("Order not found.") from error
+        if order.status == Order.Status.CANCELLED:
+            return Response({"detail": "A cancelled order cannot be marked paid."}, status=status.HTTP_409_CONFLICT)
+        if order.payment_status != Order.PaymentStatus.MARKED_PAID:
+            order.payment_status = Order.PaymentStatus.MARKED_PAID
+            order.payment_marked_at = timezone.now()
+            order.save(update_fields=["payment_status", "payment_marked_at", "updated_at"])
+        return Response(ShopOrderSerializer(order, context={"request": request}).data)
 
 
 class ShopPendingOrderDeleteView(APIView):

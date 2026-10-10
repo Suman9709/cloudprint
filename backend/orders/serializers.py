@@ -167,7 +167,7 @@ class GuestOrderResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = [
-            "id", "pickup_code", "payment_token", "shop_name", "original_filename", "page_count", "page_count_status",
+            "id", "pickup_code", "shop_name", "original_filename", "page_count", "page_count_status",
             "documents", "copies", "price_per_page", "finishing_cost", "print_amount", "convenience_fee",
             "total_amount", "payment_status", "status", "created_at",
         ]
@@ -228,7 +228,3 @@ class UpdateOrderStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ["status"]
-
-
-class MarkOrderPaidSerializer(serializers.Serializer):
-    payment_token = serializers.UUIDField()

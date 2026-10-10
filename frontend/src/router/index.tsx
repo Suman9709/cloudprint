@@ -42,6 +42,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <ShopDashboard /> },
       { path: "paid", element: <ShopDashboard paidOnly /> },
+      { path: "collected", element: <ShopDashboard collectedOnly /> },
       { path: "analytics", element: <ShopAnalyticsPage /> },
       { path: "settings", element: <ShopSettingsPage /> },
     ],

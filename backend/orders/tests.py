@@ -102,7 +102,7 @@ class GuestOrderFlowTests(APITestCase):
         self.assertEqual(response.data["total_amount"], "23.00")
         self.assertEqual(response.data["documents"][0]["page_count"], 10)
 
-    def test_guest_payment_confirmation_marks_the_order_paid_and_keeps_the_quoted_price(self):
+    def test_only_the_shop_can_record_an_in_person_payment(self):
         self.shop.black_white_price_per_page = "3.50"
         self.shop.save(update_fields=["black_white_price_per_page"])
         create_response = self.client.post(
@@ -114,11 +114,13 @@ class GuestOrderFlowTests(APITestCase):
         self.assertEqual(create_response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(create_response.data["print_amount"], "21.00")
         self.assertEqual(create_response.data["total_amount"], "24.00")
-        payment_response = self.client.post(
-            f"/api/orders/{create_response.data['id']}/payment/",
-            {"payment_token": create_response.data["payment_token"]},
-            format="json",
+        self.assertNotIn("payment_token", create_response.data)
+        self.assertEqual(
+            self.client.post(f"/api/orders/{create_response.data['id']}/payment/", {}, format="json").status_code,
+            status.HTTP_404_NOT_FOUND,
         )
+        self.client.force_authenticate(self.owner)
+        payment_response = self.client.patch(f"/api/orders/{create_response.data['id']}/payment-received/", {}, format="json")
 
         self.assertEqual(payment_response.status_code, status.HTTP_200_OK)
         self.assertEqual(payment_response.data["payment_status"], Order.PaymentStatus.MARKED_PAID)

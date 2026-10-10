@@ -2,28 +2,9 @@ import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "r
 import { Link, useParams } from "react-router-dom";
 import { api, apiError } from "../../lib/api";
 
-type Shop = {
-  name: string; slug: string; address: string; phone: string;
-  black_white_price_per_page: string; colour_price_per_page: string;
-  spiral_bind_cost: string; is_accepting_orders: boolean;
-};
-
-type UploadedDocument = {
-  id: number;
-  original_filename: string;
-  page_count: number;
-  page_count_status: "exact" | "estimated" | "review_required";
-  page_count_method: string;
-};
-
-type CreatedOrder = {
-  id: number; pickup_code: string; payment_token: string; shop_name: string;
-  original_filename: string; page_count: number;
-  page_count_status: "exact" | "estimated" | "review_required";
-  documents: UploadedDocument[]; copies: number; price_per_page: string;
-  finishing_cost: string; print_amount: string; convenience_fee: string; total_amount: string;
-  payment_status: "pending" | "marked_paid";
-};
+type Shop = { name: string; slug: string; address: string; phone: string; black_white_price_per_page: string; colour_price_per_page: string; spiral_bind_cost: string; is_accepting_orders: boolean; };
+type UploadedDocument = { id: number; original_filename: string; page_count: number; page_count_status: "exact" | "estimated" | "review_required"; page_count_method: string; };
+type CreatedOrder = { id: number; pickup_code: string; shop_name: string; original_filename: string; page_count: number; page_count_status: "exact" | "estimated" | "review_required"; documents: UploadedDocument[]; copies: number; price_per_page: string; finishing_cost: string; print_amount: string; convenience_fee: string; total_amount: string; payment_status: "pending" | "marked_paid"; };
 
 const acceptedFiles = ".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.odt,.ods,.odp,.rtf,.txt,.csv,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff";
 const money = (amount: number | string) => `₹${Number(amount).toFixed(2)}`;
@@ -41,99 +22,19 @@ const GuestShopPage = () => {
   const [order, setOrder] = useState<CreatedOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [paymentChecked, setPaymentChecked] = useState(false);
-  const [markingPaid, setMarkingPaid] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    let mounted = true;
-    api.get<Shop>(`/api/shops/${slug}/`)
-      .then(({ data }) => { if (mounted) setShop(data); })
-      .catch((requestError: unknown) => { if (mounted) setError(apiError(requestError, "We could not find this shop.")); })
-      .finally(() => { if (mounted) setLoading(false); });
-    return () => { mounted = false; };
-  }, [slug]);
-
-  const chooseFiles = (event: ChangeEvent<HTMLInputElement>) => {
-    const selected = Array.from(event.target.files ?? []);
-    // Picking the same file again should still trigger onChange, including
-    // after a client-side size/quantity validation error.
-    event.target.value = "";
-    const combined = [...files, ...selected];
-    if (combined.length > 10) {
-      setError("You can upload a maximum of 10 files in one print order.");
-      return;
-    }
-    if (combined.some((file) => file.size > 50 * 1024 * 1024)) {
-      setError("Each file must be 50 MB or smaller.");
-      return;
-    }
-    if (combined.reduce((total, file) => total + file.size, 0) > 100 * 1024 * 1024) {
-      setError("The combined upload must be 100 MB or smaller.");
-      return;
-    }
-    setFiles(combined);
-    setError("");
-  };
-
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!files.length) return setError("Choose at least one file before continuing.");
-    setSubmitting(true);
-    setError("");
-    const data = new FormData();
-    files.forEach((file) => data.append("documents", file));
-    data.append("customer_name", customerName);
-    data.append("print_mode", printMode);
-    data.append("sides", sides);
-    data.append("copies", String(copies));
-    data.append("finishing", finishing);
-    try {
-      const response = await api.post<CreatedOrder>(`/api/orders/shop/${slug}/`, data);
-      setOrder(response.data);
-    } catch (requestError) {
-      setError(apiError(requestError, "Your files could not be uploaded."));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const confirmDemoPayment = async () => {
-    if (!order || !paymentChecked) return;
-    setMarkingPaid(true);
-    setError("");
-    try {
-      const response = await api.post<CreatedOrder>(`/api/orders/${order.id}/payment/`, { payment_token: order.payment_token });
-      setOrder(response.data);
-    } catch (requestError) {
-      setError(apiError(requestError, "Payment confirmation failed. Please try again."));
-    } finally {
-      setMarkingPaid(false);
-    }
-  };
+  useEffect(() => { let mounted = true; api.get<Shop>(`/api/shops/${slug}/`).then(({ data }) => { if (mounted) setShop(data); }).catch((requestError: unknown) => { if (mounted) setError(apiError(requestError, "We could not find this shop.")); }).finally(() => { if (mounted) setLoading(false); }); return () => { mounted = false; }; }, [slug]);
+  const chooseFiles = (event: ChangeEvent<HTMLInputElement>) => { const selected = Array.from(event.target.files ?? []); event.target.value = ""; const combined = [...files, ...selected]; if (combined.length > 10) return setError("You can upload a maximum of 10 files in one print order."); if (combined.some((file) => file.size > 50 * 1024 * 1024)) return setError("Each file must be 50 MB or smaller."); if (combined.reduce((total, file) => total + file.size, 0) > 100 * 1024 * 1024) return setError("The combined upload must be 100 MB or smaller."); setFiles(combined); setError(""); };
+  const submit = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); if (!files.length) return setError("Choose at least one file before continuing."); setSubmitting(true); setError(""); const data = new FormData(); files.forEach((file) => data.append("documents", file)); data.append("customer_name", customerName); data.append("print_mode", printMode); data.append("sides", sides); data.append("copies", String(copies)); data.append("finishing", finishing); try { const response = await api.post<CreatedOrder>(`/api/orders/shop/${slug}/`, data); setOrder(response.data); } catch (requestError) { setError(apiError(requestError, "Your files could not be uploaded.")); } finally { setSubmitting(false); } };
 
   if (loading) return <section className="mx-auto min-h-[55vh] max-w-3xl px-6 py-20 text-center text-slate-600">Loading shop…</section>;
   if (!shop) return <section className="mx-auto min-h-[55vh] max-w-3xl px-6 py-20 text-center"><h1 className="text-3xl font-bold">Shop unavailable</h1><p className="mt-3 text-slate-600">{error || "This shop URL is not available."}</p><Link to="/" className="mt-6 inline-block font-semibold text-blue-600">Back to CloudPrint</Link></section>;
-
-  if (order?.payment_status === "marked_paid") {
-    return <section className="min-h-[calc(100vh-16rem)] bg-slate-50 px-6 py-16"><div className="mx-auto max-w-lg rounded-3xl border border-emerald-100 bg-white p-9 text-center shadow-xl"><p className="text-sm font-bold tracking-[.16em] text-emerald-600 uppercase">Demo payment marked</p><h1 className="mt-3 text-3xl font-bold">Keep this pickup code</h1><p className="mt-3 text-slate-600">{order.shop_name} has received {order.documents.length} file{order.documents.length === 1 ? "" : "s"} ({order.page_count} pages).</p><div className="mt-8 rounded-2xl bg-slate-950 p-6 text-white"><p className="text-xs font-bold tracking-[.18em] text-blue-200 uppercase">Pickup code</p><p className="mt-2 font-mono text-5xl font-bold tracking-[.3em]">{order.pickup_code}</p></div><p className="mt-5 text-sm text-slate-500">The shop will update the order to Ready for pickup after printing.</p><button type="button" onClick={() => { setOrder(null); setFiles([]); setPaymentChecked(false); }} className="mt-7 w-full rounded-xl bg-blue-600 px-4 py-3.5 font-semibold text-white">Send another order</button></div></section>;
-  }
-
-  // New orders include an immutable split. Keep the older confirmation branch
-  // below only for an order created before the pricing-split migration.
-  if (order && order.convenience_fee !== undefined) {
-    const needsReview = order.page_count_status !== "exact";
-    return <section className="min-h-[calc(100vh-16rem)] bg-slate-50 px-6 py-16"><div className="mx-auto max-w-lg rounded-3xl border border-blue-100 bg-white p-8 shadow-xl"><p className="text-sm font-bold tracking-[.16em] text-blue-600 uppercase">Demo payment</p><h1 className="mt-2 text-3xl font-bold">Confirm your print order</h1><p className="mt-2 text-slate-600">No real payment gateway is connected yet.</p><div className="mt-6 rounded-2xl bg-slate-950 p-5 text-white"><div className="space-y-2 text-sm text-slate-200">{order.documents.map((document) => <div key={document.id} className="flex items-start justify-between gap-3"><span className="min-w-0 truncate">{document.original_filename}</span><span className="shrink-0">{document.page_count} p.</span></div>)}</div><div className="mt-4 flex justify-between border-t border-white/10 pt-4 text-sm text-slate-300"><span>{order.page_count} pages × {order.copies} copies</span><span>{money(order.price_per_page)} / page</span></div>{Number(order.finishing_cost) > 0 && <div className="mt-2 flex justify-between text-sm text-slate-300"><span>Spiral binding</span><span>{money(order.finishing_cost)}</span></div>}<div className="mt-4 flex justify-between border-t border-white/10 pt-4 text-sm text-slate-300"><span>Print and finishing</span><span>{money(order.print_amount)}</span></div><div className="mt-2 flex justify-between text-sm text-slate-300"><span>CloudPrint convenience fee</span><span>{money(order.convenience_fee)}</span></div><div className="mt-4 border-t border-white/10 pt-4 text-xl font-bold">Total <span className="float-right">{money(order.total_amount)}</span></div></div>{needsReview && <p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">One or more files used an estimated page count. The shop will confirm the final count before printing.</p>}<label className="mt-6 flex cursor-pointer gap-3 rounded-xl border border-slate-200 p-4 text-sm leading-6"><input checked={paymentChecked} onChange={(event) => setPaymentChecked(event.target.checked)} type="checkbox" className="mt-1 size-4" /><span>I confirm payment to the shop. This is a <strong>demo-only</strong> confirmation.</span></label>{error && <p className="mt-4 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}<button disabled={!paymentChecked || markingPaid} type="button" onClick={() => void confirmDemoPayment()} className="mt-6 w-full rounded-xl bg-blue-600 px-4 py-3.5 font-semibold text-white disabled:bg-slate-300">{markingPaid ? "Confirming…" : "Mark paid and get pickup code"}</button></div></section>;
-  }
-
-  if (order) {
-    const needsReview = order.page_count_status !== "exact";
-    return <section className="min-h-[calc(100vh-16rem)] bg-slate-50 px-6 py-16"><div className="mx-auto max-w-lg rounded-3xl border border-blue-100 bg-white p-8 shadow-xl"><p className="text-sm font-bold tracking-[.16em] text-blue-600 uppercase">Demo payment</p><h1 className="mt-2 text-3xl font-bold">Confirm your print order</h1><p className="mt-2 text-slate-600">No real payment gateway is connected yet.</p><div className="mt-6 rounded-2xl bg-slate-950 p-5 text-white"><div className="space-y-2 text-sm text-slate-200">{order.documents.map((document) => <div key={document.id} className="flex items-start justify-between gap-3"><span className="min-w-0 truncate">{document.original_filename}</span><span className="shrink-0">{document.page_count} p.</span></div>)}</div><div className="mt-4 flex justify-between border-t border-white/10 pt-4 text-sm text-slate-300"><span>{order.page_count} pages × {order.copies} copies</span><span>{money(order.price_per_page)} / page</span></div>{Number(order.finishing_cost) > 0 && <div className="mt-2 flex justify-between text-sm text-slate-300"><span>Spiral binding</span><span>{money(order.finishing_cost)}</span></div>}<div className="mt-4 border-t border-white/10 pt-4 text-xl font-bold">Total <span className="float-right">{money(order.total_amount)}</span></div></div>{needsReview && <p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">One or more files used an estimated page count. The shop will confirm the final count before printing.</p>}<label className="mt-6 flex cursor-pointer gap-3 rounded-xl border border-slate-200 p-4 text-sm leading-6"><input checked={paymentChecked} onChange={(event) => setPaymentChecked(event.target.checked)} type="checkbox" className="mt-1 size-4" /><span>I confirm payment to the shop. This is a <strong>demo-only</strong> confirmation.</span></label>{error && <p className="mt-4 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}<button disabled={!paymentChecked || markingPaid} type="button" onClick={() => void confirmDemoPayment()} className="mt-6 w-full rounded-xl bg-blue-600 px-4 py-3.5 font-semibold text-white disabled:bg-slate-300">{markingPaid ? "Confirming…" : "Mark paid and get pickup code"}</button></div></section>;
-  }
+  if (order) { const needsReview = order.page_count_status !== "exact"; return <section className="min-h-[calc(100vh-16rem)] bg-slate-50 px-6 py-16"><div className="mx-auto max-w-lg rounded-3xl border border-emerald-100 bg-white p-8 text-center shadow-xl"><p className="text-sm font-bold tracking-[.16em] text-emerald-600 uppercase">Order submitted</p><h1 className="mt-3 text-3xl font-bold">Keep this pickup code</h1><p className="mt-3 text-slate-600">{order.shop_name} has received {order.documents.length} file{order.documents.length === 1 ? "" : "s"} ({order.page_count} pages).</p><div className="mt-7 rounded-2xl bg-slate-950 p-6 text-white"><p className="text-xs font-bold tracking-[.18em] text-blue-200 uppercase">Pickup code</p><p className="mt-2 font-mono text-5xl font-bold tracking-[.3em]">{order.pickup_code}</p></div><div className="mt-6 rounded-2xl bg-blue-50 p-5 text-left text-sm text-blue-950"><div className="flex justify-between"><span>Print and finishing</span><strong>{money(order.print_amount)}</strong></div>{Number(order.convenience_fee) > 0 && <div className="mt-2 flex justify-between"><span>CloudPrint fee</span><strong>{money(order.convenience_fee)}</strong></div>}<div className="mt-3 flex justify-between border-t border-blue-100 pt-3 text-base font-bold"><span>Pay at the shop</span><span>{money(order.total_amount)}</span></div></div><p className="mt-5 text-sm text-slate-600">Pay manually by the shop’s UPI or cash when you collect the printout. The shop staff will confirm payment.</p>{needsReview && <p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">One or more files used an estimated page count. The shop will confirm the final count before printing.</p>}<button type="button" onClick={() => { setOrder(null); setFiles([]); }} className="mt-7 w-full rounded-xl bg-blue-600 px-4 py-3.5 font-semibold text-white">Send another order</button></div></section>; }
 
   const pagePrice = printMode === "colour" ? Number(shop.colour_price_per_page) : Number(shop.black_white_price_per_page);
   const spiralCost = finishing === "spiral_bind" ? Number(shop.spiral_bind_cost) : 0;
-  return <section className="min-h-screen bg-slate-50 px-6 py-10"><div className="mx-auto max-w-5xl"><header className="rounded-3xl bg-slate-950 px-7 py-8 text-white"><p className="text-sm font-bold tracking-[.16em] text-blue-200 uppercase">Guest print order</p><h1 className="mt-2 text-3xl font-bold">{shop.name}</h1>{shop.address && <p className="mt-1 text-slate-300">{shop.address}</p>}{shop.phone && <p className="mt-1 text-sm text-slate-300">{shop.phone}</p>}</header><div className="mt-7 grid gap-7 lg:grid-cols-[minmax(0,1fr)_19rem]"><form onSubmit={submit} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><p className="text-sm font-bold text-blue-600">01 · DOCUMENTS</p><h2 className="mt-1 text-2xl font-bold">Upload files for one print order</h2><p className="mt-1 text-sm text-slate-600">Choose up to 10 PDF, Office, text or image files. PDFs are counted exactly; Office files are rendered by the server when available.</p><input ref={inputRef} type="file" multiple className="hidden" accept={acceptedFiles} onChange={chooseFiles} /><button type="button" onClick={() => inputRef.current?.click()} className={`mt-6 w-full rounded-2xl border-2 border-dashed p-8 text-center ${files.length ? "border-emerald-300 bg-emerald-50" : "border-slate-200 bg-slate-50"}`}><span className="text-2xl">{files.length ? "✓" : "↑"}</span><span className="mt-2 block font-semibold">{files.length ? `${files.length} file${files.length === 1 ? "" : "s"} selected — add more` : "Choose documents or images"}</span><span className="mt-1 block text-xs text-slate-500">50 MB per file, 100 MB combined · no account required</span></button>{files.length > 0 && <ul className="mt-4 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">{files.map((file, index) => <li key={`${file.name}-${file.size}-${index}`} className="flex items-center gap-3 px-3 py-2.5 text-sm"><span className="min-w-0 flex-1 truncate font-medium">{file.name}</span><span className="shrink-0 text-slate-500">{(file.size / 1024 / 1024).toFixed(1)} MB</span><button type="button" onClick={() => setFiles((current) => current.filter((_, fileIndex) => fileIndex !== index))} className="shrink-0 font-semibold text-rose-600">Remove</button></li>)}</ul>}<label className="mt-5 block text-sm font-semibold">Your name <span className="font-normal text-slate-400">(optional)</span><input value={customerName} onChange={(event) => setCustomerName(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3 font-normal" /></label><div className="mt-7 border-t border-slate-100 pt-6"><p className="text-sm font-bold text-blue-600">02 · PRINT OPTIONS</p><div className="mt-4 grid gap-4 sm:grid-cols-2"><label className="text-sm font-semibold">Print colour<select value={printMode} onChange={(event) => setPrintMode(event.target.value as typeof printMode)} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 font-normal"><option value="black_white">Black & white</option><option value="colour">Colour</option></select></label><label className="text-sm font-semibold">Sides<select value={sides} onChange={(event) => setSides(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 font-normal"><option value="single">Single-sided</option><option value="double">Double-sided</option></select></label><label className="text-sm font-semibold">Copies<select value={copies} onChange={(event) => setCopies(Number(event.target.value))} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 font-normal">{[1, 2, 3, 5, 10].map((value) => <option key={value} value={value}>{value}</option>)}</select></label><label className="text-sm font-semibold">Finishing<select value={finishing} onChange={(event) => setFinishing(event.target.value as typeof finishing)} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 font-normal"><option value="none">None</option><option value="staple">Staple</option><option value="spiral_bind">Spiral bind</option></select></label></div></div>{error && <p className="mt-5 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}<button disabled={submitting || !shop.is_accepting_orders || !files.length} className="mt-7 w-full rounded-xl bg-blue-600 px-4 py-3.5 font-semibold text-white disabled:bg-slate-300">{submitting ? "Counting pages and sending order…" : "Calculate total and continue"}</button></form><aside className="h-fit rounded-3xl border border-blue-100 bg-blue-50 p-6"><p className="text-sm font-bold text-blue-700">Server-calculated quote</p><div className="mt-5 rounded-2xl bg-white p-4 text-sm"><div className="flex justify-between"><span>{printMode === "colour" ? "Colour" : "Black & white"} / page</span><strong>{money(pagePrice)}</strong></div><div className="mt-3 flex justify-between"><span>Files selected</span><span>{files.length}</span></div>{spiralCost > 0 && <div className="mt-3 flex justify-between"><span>Spiral binding</span><span>{money(spiralCost)}</span></div>}<div className="mt-4 border-t border-slate-100 pt-4 font-semibold">Pages and final total appear after the server reads every uploaded file.</div></div><p className="mt-5 text-xs leading-5 text-blue-900">The page count is no longer typed by the customer. It is calculated from every file in this order and stored for the shop.</p></aside></div></div></section>;
+  return <section className="min-h-screen bg-slate-50 px-6 py-10"><div className="mx-auto max-w-5xl"><header className="rounded-3xl bg-slate-950 px-7 py-8 text-white"><p className="text-sm font-bold tracking-[.16em] text-blue-200 uppercase">Guest print order</p><h1 className="mt-2 text-3xl font-bold">{shop.name}</h1>{shop.address && <p className="mt-1 text-slate-300">{shop.address}</p>}{shop.phone && <p className="mt-1 text-sm text-slate-300">{shop.phone}</p>}</header><div className="mt-7 grid gap-7 lg:grid-cols-[minmax(0,1fr)_19rem]"><form onSubmit={submit} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><p className="text-sm font-bold text-blue-600">01 · DOCUMENTS</p><h2 className="mt-1 text-2xl font-bold">Upload files for one print order</h2><p className="mt-1 text-sm text-slate-600">Choose up to 10 PDF, Office, text or image files. Payment is made manually when you collect your printout.</p><input ref={inputRef} type="file" multiple className="hidden" accept={acceptedFiles} onChange={chooseFiles} /><button type="button" onClick={() => inputRef.current?.click()} className={`mt-6 w-full rounded-2xl border-2 border-dashed p-8 text-center ${files.length ? "border-emerald-300 bg-emerald-50" : "border-slate-200 bg-slate-50"}`}><span className="text-2xl">{files.length ? "✓" : "↑"}</span><span className="mt-2 block font-semibold">{files.length ? `${files.length} file${files.length === 1 ? "" : "s"} selected — add more` : "Choose documents or images"}</span><span className="mt-1 block text-xs text-slate-500">50 MB per file, 100 MB combined · no account required</span></button>{files.length > 0 && <ul className="mt-4 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">{files.map((file, index) => <li key={`${file.name}-${file.size}-${index}`} className="flex items-center gap-3 px-3 py-2.5 text-sm"><span className="min-w-0 flex-1 truncate font-medium">{file.name}</span><span className="shrink-0 text-slate-500">{(file.size / 1024 / 1024).toFixed(1)} MB</span><button type="button" onClick={() => setFiles((current) => current.filter((_, fileIndex) => fileIndex !== index))} className="shrink-0 font-semibold text-rose-600">Remove</button></li>)}</ul>}<label className="mt-5 block text-sm font-semibold">Your name <span className="font-normal text-slate-400">(optional)</span><input value={customerName} onChange={(event) => setCustomerName(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3 font-normal" /></label><div className="mt-7 border-t border-slate-100 pt-6"><p className="text-sm font-bold text-blue-600">02 · PRINT OPTIONS</p><div className="mt-4 grid gap-4 sm:grid-cols-2"><label className="text-sm font-semibold">Print colour<select value={printMode} onChange={(event) => setPrintMode(event.target.value as typeof printMode)} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 font-normal"><option value="black_white">Black & white</option><option value="colour">Colour</option></select></label><label className="text-sm font-semibold">Sides<select value={sides} onChange={(event) => setSides(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 font-normal"><option value="single">Single-sided</option><option value="double">Double-sided</option></select></label><label className="text-sm font-semibold">Copies<select value={copies} onChange={(event) => setCopies(Number(event.target.value))} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 font-normal">{[1, 2, 3, 5, 10].map((value) => <option key={value} value={value}>{value}</option>)}</select></label><label className="text-sm font-semibold">Finishing<select value={finishing} onChange={(event) => setFinishing(event.target.value as typeof finishing)} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 font-normal"><option value="none">None</option><option value="staple">Staple</option><option value="spiral_bind">Spiral bind</option></select></label></div></div>{error && <p className="mt-5 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}<button disabled={submitting || !shop.is_accepting_orders || !files.length} className="mt-7 w-full rounded-xl bg-blue-600 px-4 py-3.5 font-semibold text-white disabled:bg-slate-300">{submitting ? "Counting pages and sending order…" : "Submit order and get pickup code"}</button></form><aside className="h-fit rounded-3xl border border-blue-100 bg-blue-50 p-6"><p className="text-sm font-bold text-blue-700">Server-calculated quote</p><div className="mt-5 rounded-2xl bg-white p-4 text-sm"><div className="flex justify-between"><span>{printMode === "colour" ? "Colour" : "Black & white"} / page</span><strong>{money(pagePrice)}</strong></div><div className="mt-3 flex justify-between"><span>Files selected</span><span>{files.length}</span></div>{spiralCost > 0 && <div className="mt-3 flex justify-between"><span>Spiral binding</span><span>{money(spiralCost)}</span></div>}<div className="mt-4 border-t border-slate-100 pt-4 font-semibold">Pages and final total appear after the server reads every uploaded file.</div></div><p className="mt-5 text-xs leading-5 text-blue-900">Pay the displayed total manually to the shop when collecting your printout.</p></aside></div></div></section>;
 };
 
 export default GuestShopPage;
