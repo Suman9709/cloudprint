@@ -82,10 +82,12 @@ MIDDLEWARE = [
 ]
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    "http://127.0.0.1:5173",
 ]
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
+    "http://127.0.0.1:5173",
 ]
 CSRF_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SAMESITE = "Lax"
@@ -165,6 +167,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
+# Production: set LIBREOFFICE_BIN to the full soffice executable path. It
+# renders Office documents to PDF before the server counts printed pages.
+LIBREOFFICE_BIN = os.environ.get('LIBREOFFICE_BIN', '')
 
 
 # Email

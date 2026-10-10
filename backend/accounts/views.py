@@ -3,14 +3,14 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .authentication import enforce_csrf
-from .serializers import LoginSerializer, StudentSignupSerializer
+from .serializers import LoginSerializer
 
 
 def user_data(user):
@@ -20,6 +20,7 @@ def user_data(user):
         "email": user.email,
         "name": user.name,
         "role": user.role,
+        "is_platform_admin": user.is_superuser or user.role == user.Role.PLATFORM_ADMIN,
     }
 
 
@@ -53,24 +54,6 @@ def clear_auth_cookies(response):
     response.delete_cookie(settings.JWT_REFRESH_COOKIE, **cookie_options)
 
 
-class StudentSignupView(APIView):
-    permission_classes = [AllowAny]
-    authentication_classes = []
-
-    def post(self, request):
-        serializer = StudentSignupSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        refresh = RefreshToken.for_user(user)
-
-        response = Response(
-            {"message": "User created successfully", "user": user_data(user)},
-            status=status.HTTP_201_CREATED,
-        )
-        set_auth_cookies(response, refresh)
-        return response
-
-
 class LoginView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
@@ -87,6 +70,13 @@ class LoginView(APIView):
         )
         set_auth_cookies(response, refresh)
         return response
+
+
+class CurrentUserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response({"user": user_data(request.user)})
 
 
 @method_decorator(ensure_csrf_cookie, name="dispatch")

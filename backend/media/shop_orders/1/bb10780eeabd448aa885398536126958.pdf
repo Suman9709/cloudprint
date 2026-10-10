@@ -1,0 +1,75 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 655 >>
+stream
+BT
+/F1 11 Tf
+50 790 Td
+15 TL
+(SCHOOL FEE INVOICE) Tj
+T*
+(Invoice number: INV-000001) Tj
+T*
+(Student: STUDENT4 \(STUDENT4\)) Tj
+T*
+(Class and section: one-A) Tj
+T*
+(Academic year: 2026-27) Tj
+T*
+(Billing month: October 2026) Tj
+T*
+(Due date: 10 Oct 2026) Tj
+T*
+() Tj
+T*
+(School fee: INR 1000.00) Tj
+T*
+(Transport fee: INR 500.00) Tj
+T*
+(Total invoice amount: INR 1500.00) Tj
+T*
+(Amount paid: INR 0.00) Tj
+T*
+(Outstanding amount: INR 1500.00) Tj
+T*
+(Invoice status: Unpaid) Tj
+T*
+() Tj
+T*
+(PAYMENT HISTORY) Tj
+T*
+(No payments have been recorded for this invoice.) Tj
+T*
+() Tj
+T*
+(This is a system-generated invoice from the Fee Management System.) Tj
+T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000121 00000 n 
+0000000247 00000 n 
+0000000952 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1022
+%%EOF
