@@ -33,6 +33,10 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env')
 
+# The public React application. Keep this in the environment so production
+# deployments can use their real Vercel/custom domain without code changes.
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://cloudprint-one.vercel.app')
+
 # Added to every new order and retained by the platform. It is read only on
 # the public page; the server freezes the actual value on each order.
 CONVENIENCE_FEE = Decimal(os.environ.get('CONVENIENCE_FEE', '3.00'))
@@ -85,15 +89,17 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-CORS_ALLOWED_ORIGINS = [
+CORS_ALLOWED_ORIGINS = list(dict.fromkeys([
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-]
+    FRONTEND_URL.rstrip('/'),
+]))
 CORS_ALLOW_CREDENTIALS = True
-CSRF_TRUSTED_ORIGINS = [
+CSRF_TRUSTED_ORIGINS = list(dict.fromkeys([
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-]
+    FRONTEND_URL.rstrip('/'),
+]))
 CSRF_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SAMESITE = "Lax"
 
@@ -174,7 +180,6 @@ USE_TZ = True
 STATIC_URL = 'static/'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
-FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
 # Production: set LIBREOFFICE_BIN to the full soffice executable path. It
 # renders Office documents to PDF before the server counts printed pages.
 LIBREOFFICE_BIN = os.environ.get('LIBREOFFICE_BIN', '')
