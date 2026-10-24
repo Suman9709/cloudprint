@@ -11,6 +11,8 @@ python-dotenv = "*"
 psycopg = {extras = ["binary"], version = "*"}
 djangorestframework-simplejwt = "*"
 pypdf = "*"
+gunicorn = "*"
+whitenoise = {extras = ["brotli"], version = "*"}
 
 [dev-packages]
 

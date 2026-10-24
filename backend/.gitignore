@@ -5,4 +5,5 @@ __pycache__/
 dist/
 *.egg-info/
 .env
-db.sqlite3 
+db.sqlite3
+staticfiles/
