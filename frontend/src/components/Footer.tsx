@@ -1,12 +1,26 @@
 import { Link } from "react-router-dom";
+import VelqoMark from "./VelqoMark";
 
 const Footer = () => (
-  <footer className="border-t border-slate-200 bg-white">
-    <div className="mx-auto flex max-w-7xl flex-col gap-6 px-6 py-10 sm:px-8 md:flex-row md:items-end md:justify-between lg:px-10">
-      <div><Link to="/" className="text-lg font-bold tracking-tight text-slate-950">Cloud<span className="text-blue-600">Print</span></Link><p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">Guest ordering for local print shops. No student account required.</p></div>
-      <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium text-slate-600"><a href="/#how-it-works" className="hover:text-blue-600">How it works</a><a href="/#services" className="hover:text-blue-600">Services</a><Link to="/auth/login" className="hover:text-blue-600">Shop sign in</Link><Link to="/auth/admin-login" className="hover:text-blue-600">Platform admin</Link><Link to="/terms-of-use" className="hover:text-blue-600">Terms of use</Link><Link to="/privacy-policy" className="hover:text-blue-600">Privacy policy</Link><Link to="/cookie-policy" className="hover:text-blue-600">Cookie policy</Link><Link to="/refund-policy" className="hover:text-blue-600">Refund policy</Link></div>
+  <footer className="bg-slate-950 text-slate-300">
+    <div className="mx-auto grid max-w-7xl gap-10 px-6 py-14 sm:px-8 md:grid-cols-[1.15fr_.7fr_1fr] lg:px-10">
+      <div>
+        <Link to="/" className="inline-flex items-center gap-3"><VelqoMark compact /><span className="text-xl font-black tracking-tight text-white">Cloud<span className="text-blue-400">Print</span></span></Link>
+        <p className="mt-5 max-w-sm text-sm leading-6 text-slate-400">Guest ordering for local print shops. Customers upload at the shop link and collect with a four-digit code.</p>
+        <Link to="/auth/login" className="btn btn-sm mt-6 border-0 bg-white text-slate-950 shadow-none hover:bg-blue-50">Open shop dashboard</Link>
+      </div>
+      <div>
+        <p className="text-xs font-bold tracking-[.16em] text-slate-500 uppercase">CloudPrint</p>
+        <div className="mt-4 space-y-3 text-sm font-medium"><a href="/#how-it-works" className="block transition hover:text-white">How it works</a><a href="/#services" className="block transition hover:text-white">For print shops</a><Link to="/auth/login" className="block transition hover:text-white">Shop sign in</Link><Link to="/auth/admin-login" className="block transition hover:text-white">Platform admin</Link></div>
+      </div>
+      <div>
+        <p className="text-xs font-bold tracking-[.16em] text-slate-500 uppercase">A Velqo product</p>
+        <div className="mt-4"><VelqoMark /></div>
+        <p className="mt-4 max-w-xs text-sm leading-6 text-slate-400">CloudPrint is designed and developed by Velqo.</p>
+        <div className="mt-6 flex flex-wrap gap-x-4 gap-y-2 text-xs font-medium text-slate-500"><Link to="/terms-of-use" className="hover:text-white">Terms</Link><Link to="/privacy-policy" className="hover:text-white">Privacy</Link><Link to="/cookie-policy" className="hover:text-white">Cookies</Link><Link to="/refund-policy" className="hover:text-white">Refunds</Link></div>
+      </div>
     </div>
-    <div className="border-t border-slate-100 px-6 py-4 text-center text-xs text-slate-500">© {new Date().getFullYear()} CloudPrint. Guest ordering made simple.</div>
+    <div className="border-t border-white/10"><div className="mx-auto flex max-w-7xl flex-col gap-2 px-6 py-5 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-10"><span>© {new Date().getFullYear()} CloudPrint</span><span>Built with care by Velqo</span></div></div>
   </footer>
 );
 
