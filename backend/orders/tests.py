@@ -1,8 +1,10 @@
 import io
 import tempfile
+from datetime import timedelta
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
+from django.utils import timezone
 from pypdf import PdfWriter
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -10,7 +12,8 @@ from rest_framework.test import APITestCase
 from accounts.models import User
 from shops.models import Shop
 
-from .models import Order
+from .models import Order, OrderDocument
+from .retention import purge_expired_order_documents
 
 
 def pdf_upload(name, pages=1):
@@ -214,3 +217,38 @@ class GuestOrderFlowTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
         self.assertTrue(Order.objects.filter(pk=order.pk).exists())
+
+    @override_settings(ORDER_DOCUMENT_RETENTION_MINUTES=30)
+    def test_expired_document_is_removed_but_its_order_metadata_remains(self):
+        create_response = self.client.post(
+            "/api/orders/shop/library-print/",
+            {"document": pdf_upload("private-notes.pdf")},
+            format="multipart",
+        )
+        self.assertEqual(create_response.status_code, status.HTTP_201_CREATED)
+
+        order = Order.objects.get(pk=create_response.data["id"])
+        document = order.documents.get()
+        stored_name = document.document.name
+        self.assertTrue(document.document.storage.exists(stored_name))
+        OrderDocument.objects.filter(pk=document.pk).update(
+            created_at=timezone.now() - timedelta(minutes=31)
+        )
+
+        result = purge_expired_order_documents()
+
+        document.refresh_from_db()
+        order.refresh_from_db()
+        self.assertEqual(result["documents"], 1)
+        self.assertEqual(document.document.name, "")
+        self.assertIsNotNone(document.file_deleted_at)
+        self.assertTrue(Order.objects.filter(pk=order.pk).exists())
+        self.assertEqual(order.original_filename, "private-notes.pdf")
+        self.assertFalse(document.document.storage.exists(stored_name))
+
+        self.client.force_authenticate(self.owner)
+        dashboard = self.client.get("/api/orders/dashboard/")
+        file_metadata = dashboard.data["results"][0]["documents"][0]
+        self.assertFalse(file_metadata["is_available"])
+        self.assertIsNone(file_metadata["document_url"])
+        self.assertIsNotNone(file_metadata["file_deleted_at"])

@@ -219,6 +219,8 @@ class UploadedOrderDocumentView(APIView):
             raise Http404 from error
         if not shop_queryset_for(request.user).filter(pk=document.order.shop_id).exists():
             raise PermissionDenied("You do not have access to this document.")
+        if not document.document:
+            raise Http404
         return FileResponse(document.document.open("rb"), as_attachment=True, filename=document.original_filename)
 
 
@@ -234,6 +236,8 @@ class UploadedOrderDocumentPrintView(APIView):
             raise Http404 from error
         if not shop_queryset_for(request.user).filter(pk=document.order.shop_id).exists():
             raise PermissionDenied("You do not have access to this document.")
+        if not document.document:
+            raise Http404
         return inline_print_response(document.document, document.original_filename)
 
 

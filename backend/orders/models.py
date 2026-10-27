@@ -35,6 +35,7 @@ class Order(models.Model):
     payment_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     # Kept for existing orders. New multi-file uploads live in ``documents``.
     document = models.FileField(upload_to=order_document_path, blank=True)
+    document_deleted_at = models.DateTimeField(null=True, blank=True)
     original_filename = models.CharField(max_length=255)
     customer_name = models.CharField(max_length=100, blank=True)
     print_mode = models.CharField(max_length=20, default="black_white")
@@ -76,7 +77,7 @@ class OrderDocument(models.Model):
     """One uploaded file belonging to a print order."""
 
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="documents")
-    document = models.FileField(upload_to=order_document_path)
+    document = models.FileField(upload_to=order_document_path, blank=True)
     original_filename = models.CharField(max_length=255)
     page_count = models.PositiveIntegerField(default=1)
     page_count_status = models.CharField(
@@ -85,6 +86,7 @@ class OrderDocument(models.Model):
         default=Order.PageCountStatus.EXACT,
     )
     page_count_method = models.CharField(max_length=60, default="unknown")
+    file_deleted_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -101,6 +101,7 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'orders.middleware.ExpiredOrderDocumentCleanupMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -139,6 +140,17 @@ X_FRAME_OPTIONS = "DENY"
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024
 DATA_UPLOAD_MAX_NUMBER_FILES = 10
+
+# Customer documents are short-lived. Order records remain available for shop
+# history and reporting after the original upload has been permanently removed.
+ORDER_DOCUMENT_RETENTION_MINUTES = int(os.environ.get("ORDER_DOCUMENT_RETENTION_MINUTES", "30"))
+ORDER_DOCUMENT_CLEANUP_INTERVAL_SECONDS = int(
+    os.environ.get("ORDER_DOCUMENT_CLEANUP_INTERVAL_SECONDS", "300")
+)
+if ORDER_DOCUMENT_RETENTION_MINUTES < 1:
+    raise ImproperlyConfigured("ORDER_DOCUMENT_RETENTION_MINUTES must be at least 1.")
+if ORDER_DOCUMENT_CLEANUP_INTERVAL_SECONDS < 1:
+    raise ImproperlyConfigured("ORDER_DOCUMENT_CLEANUP_INTERVAL_SECONDS must be at least 1.")
 
 ROOT_URLCONF = 'config.urls'
 

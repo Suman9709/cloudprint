@@ -157,7 +157,10 @@ class CreateGuestOrderSerializer(serializers.Serializer):
 class OrderDocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderDocument
-        fields = ["id", "original_filename", "page_count", "page_count_status", "page_count_method"]
+        fields = [
+            "id", "original_filename", "page_count", "page_count_status",
+            "page_count_method", "file_deleted_at",
+        ]
 
 
 class GuestOrderResponseSerializer(serializers.ModelSerializer):
@@ -193,8 +196,9 @@ class ShopOrderSerializer(serializers.ModelSerializer):
         payload = [
             {
                 **OrderDocumentSerializer(document).data,
-                "document_url": f"/api/orders/documents/{document.pk}/download/" if request else None,
-                "print_url": f"/api/orders/documents/{document.pk}/print/" if request else None,
+                "is_available": bool(document.document),
+                "document_url": f"/api/orders/documents/{document.pk}/download/" if request and document.document else None,
+                "print_url": f"/api/orders/documents/{document.pk}/print/" if request and document.document else None,
             }
             for document in documents
         ]
@@ -206,8 +210,10 @@ class ShopOrderSerializer(serializers.ModelSerializer):
                 "page_count": order.page_count,
                 "page_count_status": order.page_count_status,
                 "page_count_method": "legacy_order_file",
-                "document_url": self.get_document_url(order),
-                "print_url": self.get_print_url(order),
+                "file_deleted_at": order.document_deleted_at,
+                "is_available": bool(order.document),
+                "document_url": self.get_document_url(order) if order.document else None,
+                "print_url": self.get_print_url(order) if order.document else None,
             })
         return payload
 
