@@ -50,8 +50,8 @@ const Navbar = () => {
           </>
         ) : (
           <>
-            <div className="navbar-center hidden lg:flex"><div className="flex items-center gap-1"><a href="/#how-it-works" className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-950">How it works</a><a href="/#services" className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-950">For print shops</a></div></div>
-            <div className="navbar-end gap-2"><NavLink to="/auth/admin-login" className="btn btn-ghost btn-sm hidden text-slate-700 lg:inline-flex">Admin</NavLink><NavLink to="/auth/login" className="btn btn-sm border-0 bg-slate-950 px-4 text-white shadow-lg shadow-slate-900/15 hover:bg-slate-800">Shop sign in</NavLink>{mobileMenu([["/#how-it-works", "How it works"], ["/#services", "For print shops"]])}</div>
+            <div className="navbar-center hidden lg:flex"><div className="flex items-center gap-1"><a href="/#how-it-works" className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-950">How it works</a><a href="/#services" className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-950">For print shops</a><a href="/#register-shop" className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-950">Register a shop</a></div></div>
+            <div className="navbar-end gap-2"><NavLink to="/auth/admin-login" className="btn btn-ghost btn-sm hidden text-slate-700 lg:inline-flex">Admin</NavLink><NavLink to="/auth/login" className="btn btn-sm border-0 bg-slate-950 px-4 text-white shadow-lg shadow-slate-900/15 hover:bg-slate-800">Shop sign in</NavLink>{mobileMenu([["/#how-it-works", "How it works"], ["/#services", "For print shops"], ["/#register-shop", "Register a shop"]])}</div>
           </>
         )}
       </nav>

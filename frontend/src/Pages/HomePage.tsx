@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import ShopRegistrationSection from "../components/ShopRegistrationSection";
 import VelqoMark from "../components/VelqoMark";
 
 const flow = [
@@ -17,7 +18,7 @@ const HomePage = () => (
             <div className="badge border-blue-300/20 bg-blue-400/10 px-3 py-3 text-xs font-bold tracking-[.14em] text-blue-100 uppercase">Guest-first print ordering</div>
             <h1 className="mt-6 text-4xl font-black leading-[1.03] tracking-tight text-white sm:text-5xl lg:text-6xl">One link for every print shop.<span className="block text-blue-300">One easy pickup.</span></h1>
             <p className="mt-6 max-w-xl text-lg leading-8 text-slate-300">CloudPrint turns a shop URL into a clear order flow: upload, choose print options, and collect with a four-digit code.</p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row"><a href="#how-it-works" className="btn border-0 bg-blue-500 px-6 text-white shadow-lg shadow-blue-500/20 hover:bg-blue-400">See how it works</a><Link to="/auth/login" className="btn border-white/20 bg-white/5 px-6 text-white hover:border-white/30 hover:bg-white/10">Shop owner sign in</Link></div>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row"><a href="#how-it-works" className="btn border-0 bg-blue-500 px-6 text-white shadow-lg shadow-blue-500/20 hover:bg-blue-400">See how it works</a><a href="#register-shop" className="btn border-white/20 bg-white/5 px-6 text-white hover:border-white/30 hover:bg-white/10">Register your shop</a></div>
             <div className="mt-10 flex items-center gap-4 border-t border-white/10 pt-6"><VelqoMark /><div><p className="text-sm font-semibold text-white">A product by Velqo</p><p className="mt-1 text-xs text-slate-400">Build. Brand. Grow.</p></div></div>
           </div>
 
@@ -49,6 +50,8 @@ const HomePage = () => (
         <div className="card overflow-hidden bg-slate-950 text-white"><div className="card-body relative p-8"><div className="absolute right-0 top-0 size-40 rounded-full bg-blue-500/20 blur-3xl" /><p className="relative text-sm font-bold tracking-[.16em] text-blue-200 uppercase">Built with Velqo</p><h2 className="relative mt-2 max-w-lg text-3xl font-black tracking-tight">A precise product experience for the moment a file becomes a print order.</h2><div className="relative mt-8 flex items-center justify-between border-t border-white/10 pt-6"><div><p className="text-sm font-semibold">CloudPrint × Velqo</p><p className="mt-1 text-sm text-slate-400">Designed and developed by Velqo.</p></div><VelqoMark /></div></div></div>
       </div>
     </section>
+
+    <ShopRegistrationSection />
   </div>
 );
 
